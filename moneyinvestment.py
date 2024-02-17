@@ -25,8 +25,6 @@ class Taxes():
         gemeinde_steuer = []
         totale_steuer = []
 
-        index = 0
-        val = 0
         if income < steuertarif_einkommen[0]:
             bundes_steuer = 0
             kantons_steuer = 0
@@ -36,8 +34,8 @@ class Taxes():
             pass
         else:
             bundes_steuer = self.werte_finden(income)
-            kantons_steuer = bundes_steuer * (self.steuerfuss_kanton)/100
-            gemeinde_steuer = bundes_steuer * (self.steuerfuss_gemeinde)/100
+            kantons_steuer = bundes_steuer * (self.steuersatz + self.steuerfuss_kanton)/100
+            gemeinde_steuer = bundes_steuer * (self.steuersatz + self.steuerfuss_gemeinde)/100
             totale_steuer = bundes_steuer + kantons_steuer + gemeinde_steuer
             grenzsteuersatz = self.grenzsteuersatz(income, income+100)
 
@@ -49,14 +47,14 @@ class Taxes():
                                    "Progression": grenzsteuersatz}
 
     def grenzsteuersatz(self, val_small, val_big):
-        tax_small = self.werte_finden(val_small)*(1+self.steuerfuss_gemeinde+self.steuerfuss_kanton)/100
-        tax_big = self.werte_finden(val_big)*(1+self.steuerfuss_gemeinde+self.steuerfuss_kanton)/100
+        tax_small = self.werte_finden(val_small) * (1 + self.steuersatz + self.steuerfuss_gemeinde + self.steuerfuss_kanton)/100
+        tax_big = self.werte_finden(val_big) * (1 + self.steuersatz + self.steuerfuss_gemeinde + self.steuerfuss_kanton)/100
         return np.round((tax_big - tax_small)/100*100, 0)
 
     def werte_finden(self, income):
         index = 0
         val = 0
-        while income > val:
+        while income >= val:
             index += 1
             val = steuertarif_einkommen[index]
         key_prev = 0
@@ -90,8 +88,8 @@ class Taxes():
                 grenzsteuersatz.append(self.grenzsteuersatz(income, income+100))
 
                 bundes_steuer.append(val)
-                kantons_steuer.append(bundes_steuer[-1] * (self.steuerfuss_kanton)/100)
-                gemeinde_steuer.append(bundes_steuer[-1] * (self.steuerfuss_gemeinde)/100)
+                kantons_steuer.append(bundes_steuer[-1] * (self.steuersatz + self.steuerfuss_kanton)/100)
+                gemeinde_steuer.append(bundes_steuer[-1] * (self.steuersatz + self.steuerfuss_gemeinde)/100)
                 totale_steuer.append(bundes_steuer[-1] + kantons_steuer[-1] + gemeinde_steuer[-1])
 
         self.steuer_allgemein = {"Einkommen": income_all,
@@ -187,6 +185,6 @@ class Investement():
 if __name__ == '__main__':
 
     # Geben Sie hier ihr steuerbares Einkommen ein:
-    einkommen_steuerbar = 150000
-    steuern = Taxes(einkommen_steuerbar, plot=False)
+    einkommen_steuerbar = 100000
+    steuern = Taxes(einkommen_steuerbar, plot=True)
     invest = Investement(plot=False)
