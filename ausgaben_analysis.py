@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 
 class ExpensesAnalyzer:
@@ -14,7 +15,7 @@ class ExpensesAnalyzer:
         arbeitsblatt_namen = excel_arbeitsmappe.sheet_names
 
         for arbeitsblatt_name in arbeitsblatt_namen:
-            if arbeitsblatt_name[-5:] == 'Total' or arbeitsblatt_name[:2] != '23' or arbeitsblatt_name == 'Predictions':
+            if arbeitsblatt_name[-5:] == 'Total' or arbeitsblatt_name == 'Predictions':
                 continue
 
             arbeitsblatt = pd.read_excel(excel_arbeitsmappe, arbeitsblatt_name, header=None)
@@ -24,6 +25,7 @@ class ExpensesAnalyzer:
 
             arbeitsblatt['Jahr'] = arbeitsblatt_name[:2]
             arbeitsblatt['Monat'] = arbeitsblatt_name[3:]
+            arbeitsblatt['Datum'] = arbeitsblatt_name
 
             self.gesamtdaten = pd.concat([self.gesamtdaten, arbeitsblatt], ignore_index=False)
 
@@ -44,40 +46,60 @@ class ExpensesAnalyzer:
         self.gesamtdaten_ueber = self.gesamtdaten[self.gesamtdaten['Rubrik'].isin(self.rubriken_ueber)]
 
     def plot_data(self):
-        fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(15, 10))
+        cmap = plt.get_cmap('plasma')
+        # Generate 12 equally spaced values between 0 and 1
+        j = 0
+        colors = [cmap(i) for i in np.linspace(0, 1, len(self.gesamtdaten_ueber.groupby('Rubrik')))]
 
-        self.plot_category_data(axes[0, 0], 'Lebensmittel', 'Lebensmittel Ausgaben')
-        self.plot_category_data(axes[0, 1], 'Ausgang', 'Ausgang Ausgaben')
+        fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(14, 8))
+        # fig.autofmt_xdate(bottom=0.2, rotation=-45, ha='left')
+
+        self.plot_category_data(axes[0, 0], 'Lebensmittel', 'Lebensmittel')
+        self.plot_category_data(axes[0, 1], 'Ausgang', 'Ausgang', ticks_right=True)
 
         for rubrik, rubrik_data in self.gesamtdaten_ueber.groupby('Rubrik'):
-            axes[1, 0].plot(rubrik_data['Monat'], rubrik_data['Wert'], '.-', label=rubrik)
+            if rubrik not in ["Steuern", "Wohnungsmiete"]:
+                axes[1, 0].plot(rubrik_data['Datum'], rubrik_data['Wert'], '.-', color=colors[j], label=rubrik)
+            j += 1
+        axes[1, 0].legend(loc='lower center', bbox_to_anchor=(0.5, -0.8),
+                          ncol=4, fancybox=True, shadow=True)
+        axes[1, 0].invert_xaxis()
+        axes[1, 0].tick_params(axis='x', rotation=-45)
+        axes[1, 0].set_ylabel('Wert [CHF]')
+        axes[1, 0].set_title('Ausgaben-Tracking')
 
-        self.plot_total_expenses(axes[1, 1])
+        self.plot_total_expenses(axes[1, 1], ticks_right=True)
 
         plt.tight_layout()
         plt.show()
 
-    def plot_category_data(self, ax, rubrik_keyword, title):
+    def plot_category_data(self, ax, rubrik_keyword, title, ticks_right=False):
         category_data = self.gesamtdaten[self.gesamtdaten['Rubrik'].str.contains(rubrik_keyword, case=False)]
-        ax.plot(category_data['Monat'], category_data['Wert'])
+        ax.plot(category_data['Datum'], category_data['Wert'], color='mediumorchid')
         ax.set_title(title)
         ax.set_ylabel('Wert [CHF]')
         ax.invert_xaxis()
-        ax.tick_params(axis='x', rotation=45)
+        ax.tick_params(axis='x', rotation=-45)
+        if ticks_right:
+            ax.yaxis.tick_right()
+            ax.yaxis.set_label_position("right")
 
-    def plot_total_expenses(self, ax):
-        ax.bar(self.rubriken_alle, self.gesamtdaten_alle.groupby('Rubrik')['Wert'].sum())
+    def plot_total_expenses(self, ax, ticks_right=False):
+        ax.bar(self.rubriken_alle, self.gesamtdaten_alle.groupby('Rubrik')['Wert'].sum(), color='slateblue')
         ax.set_title('Gesamtausgaben')
-        ax.set_xlabel('Rubrik')
+        # ax.set_xlabel('Rubrik')
         ax.set_ylabel('Wert [CHF]')
         ax.invert_xaxis()
-        ax.set_xticklabels(self.rubriken_alle, rotation=45, ha='right')
+        ax.set_xticklabels(self.rubriken_alle, rotation=-45, ha='left')
+        if ticks_right:
+            ax.yaxis.tick_right()
+            ax.yaxis.set_label_position("right")
 
 if __name__ == "__main__":
 
     # Example usage
     root_path = r'C:\Users\misch\OneDrive\Bäckerweg_7'
-    excel_file_path = 'Ausgaben_23.xlsx'
+    excel_file_path = 'Ausgaben_Budget.xlsx'
 
     expenses_analyzer = ExpensesAnalyzer(root_path, excel_file_path)
     expenses_analyzer.analyze_data(500)
