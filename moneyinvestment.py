@@ -4,20 +4,79 @@ import matplotlib.pyplot as plt
 from steuertarif_24 import *
 
 class Taxes():
-    def __init__(self, einkommen_steuerbar, plot=False):
-        self.einkommen_persoenlich = einkommen_steuerbar
-        self.max_income = 200000
+    max_income = 200000
+    # Paramters to be checked each year
+    steuerfuss_kanton = 105 #St.Gallen
+    steuerfuss_gemeinde = 127 #Uzwil
+    steuersatz = 115 #Bund
+    ahv_abzug = 5.3 #%
+    alv_abzug = 1.1 #%
+    nbu_abzug = 0.4 #%
+    bvg_abzug = {25: 7,
+                 35: 10,
+                 45: 15,
+                 55: 18}
+    bvg_limit = [3675, 88200]
+    saeule3a_abzug = 7056 #3a / Person
+    essen_abzug = 1600 #Kantine / Person Ermässigung
+    versicherung_abzug = 3000 #Schnitt Verheiratete
+    transport_abzug = 2000 #Schnitt / Person ÖV
+    berufskosten_abzug = 2000 #Min
+    bildung_abzug = 400 #Min / Person
+    gesundheit_abzug = 300 #Schnitt
 
-        self.steuerfuss_kanton = 105 #St.Gallen
-        self.steuerfuss_gemeinde = 127 #Uzwil
-        self.steuersatz = 115 #Bund
+    def __init__(self, einkommen_steuerbar, age=30, married=False, netto=True, plot=False):
+        self.einkommen_persoenlich = einkommen_steuerbar
+        self.einkommen_nachAbzug = self.einkommen_abzuege(self.einkommen_persoenlich, age=age, married=married, netto=netto)
 
         self.steuer_rechner_allgemein()
-        self.steuer_rechner_persoenlich(self.einkommen_persoenlich)
+        self.steuer_rechner_persoenlich(self.einkommen_nachAbzug)
         if plot:
+            print(f"Ihre direkte Bundessteuer beträgt: {int(self.steuer_persoenlich['Bund'])} CHF")
+            print(f"Ihre Kantonssteuer beträgt: {int(self.steuer_persoenlich['Kanton'])} CHF")
+            print(f"Ihre Gemeindesteuer beträgt: {int(self.steuer_persoenlich['Gemeinde'])} CHF")
+            print(f"Ihre totalen Steuern betragen: {int(self.steuer_persoenlich['Total'])} CHF")
             self.plot_subplots()
-            print(f"Ihre direkte Bundessteuer beträgt: {self.steuer_persoenlich['Bund']}CHF")
 
+    def einkommen_abzuege(self, income, age, married, netto=True):
+        # print(f"Einkommen OHNE Abzüge: {income} CHF")
+        if not netto:
+            bvg_key = self.check_range(age, self.bvg_abzug)
+            if self.bvg_limit[0] <= income < self.bvg_limit[-1]:
+                abzuge_percent = self.ahv_abzug + self.alv_abzug + self.nbu_abzug + self.bvg_abzug[bvg_key]
+                income_abzug = income * abzuge_percent/100
+            elif income > self.bvg_limit[-1]:
+                abzuge_percent = self.ahv_abzug + self.alv_abzug + self.nbu_abzug
+                income_abzug = income * abzuge_percent/100
+                income_abzug += self.bvg_limit[-1] * self.bvg_abzug[bvg_key]/100
+            else:
+                abzuge_percent = self.ahv_abzug + self.alv_abzug + self.nbu_abzug
+                income_abzug = income * abzuge_percent/100
+        else:
+            income_abzug = 0
+        income_after = income - np.round(income_abzug, 0)
+        if married:
+            factor = 2
+        else:
+            factor = 1
+        income_abzug = factor * (self.essen_abzug + self.transport_abzug + self.bildung_abzug) + self.saeule3a_abzug + self.berufskosten_abzug + self.gesundheit_abzug + self.versicherung_abzug
+        income_after -= np.round(income_abzug, 0)
+        # print(f"Abzüge: {int(income - income_after)} CHF")
+        print(f"Zur Berechnung verwendetes Einkommen MIT Abzügen: {int(income_after)} CHF")
+        return income_after
+
+    @staticmethod
+    def check_range(value, dictionary):
+        # Get the keys of the dictionary
+        keys = list(dictionary.keys())
+
+        for i in range(len(keys) - 1):
+            if keys[i] <= value < keys[i + 1]:
+                return keys[i]
+        if value < keys[0]:
+            return None
+        elif value >= keys[-1]:
+            return keys[-1]
 
     def steuer_rechner_persoenlich(self, income=0):
         bundes_steuer = []
@@ -184,7 +243,7 @@ class Investement():
 
 if __name__ == '__main__':
 
-    # Geben Sie hier ihr steuerbares Einkommen ein:
-    einkommen_steuerbar = 100000
-    steuern = Taxes(einkommen_steuerbar, plot=True)
+    # Geben Sie hier ihr steuerbares Einkommen (Netto oder Brutto) ein:
+    einkommen_steuerbar = 92000
+    steuern = Taxes(einkommen_steuerbar, netto=False, married=True, plot=True)
     invest = Investement(plot=False)
