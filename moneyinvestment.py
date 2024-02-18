@@ -192,13 +192,19 @@ class Taxes():
 
 
 class Investement():
+    vermoegen_steuersatz = 17 #Kantonssatz in Promille
+    vermoegen_steuerfuss = 2.2 #Gemeindefuss in Promille
+    estimate_inflation_loss = 1.0 #Inflation Teuerung
+    estimate_bank_growth = 1.1 #Growth in Percent
+    estimate_etf_growth = 6 #Growth in Percent
     def __init__(self, plot=True):
         self.invest_rate = 3 #months
-        self.invest_duration = 5 #years
+        self.invest_duration = 10 #years
         self.invest_amount = 5000 #CHF
+        self.saved= [0]
+        self.matress = [0]
         self.bank = [0]
         self.etfs = [0]
-        self.percent = 6
         self.current_month = datetime.now().month
         self.current_year = datetime.now().year
         self.date = [f"{self.current_month}-{self.current_year}"]
@@ -214,8 +220,10 @@ class Investement():
             for month in range(12):
                 self.savings += self.invest_amount
                 if month % self.invest_rate == 0:
-                    self.bank.append(self.bank[-1] + self.savings)
-                    self.etfs.append(self.etfs[-1] * (100 + self.percent)/100 + self.savings)
+                    self.saved.append(self.saved[-1] + self.savings)
+                    self.matress.append(self.matress[-1] * (100 - self.estimate_inflation_loss)/100 + self.savings)
+                    self.bank.append(self.bank[-1] * (100 + self.estimate_bank_growth - self.estimate_inflation_loss)/100 + self.savings)
+                    self.etfs.append(self.etfs[-1] * (100 + self.estimate_etf_growth - self.estimate_inflation_loss)/100 + self.savings)
                     self.date.append(f"{self.current_month}-{self.current_year}")
                     self.savings = 0
                 self.current_month += 1
@@ -224,17 +232,19 @@ class Investement():
                     self.current_year += 1
 
             # TODO: Implement the right taxes strategy for property instead of wealth!!!!
-            # bank_taxes = Taxes(self.bank[-1])
-            # bank_tax = bank_taxes.steuer_persoenlich["Total"]
-            # self.bank[-1] = self.bank[-1]-bank_tax
-            # etf_taxes = Taxes(self.etfs[-1])
-            # etf_tax = etf_taxes.steuer_persoenlich["Total"]
-            # self.etfs[-1] = self.etfs[-1]-etf_tax
+            wealth_taxes = (self.vermoegen_steuersatz + self.vermoegen_steuerfuss) / 1000
+            self.matress[-1] = (1 - wealth_taxes) * self.matress[-1]
+            self.bank[-1] = (1 - wealth_taxes) * self.bank[-1]
+            self.etfs[-1] = (1 - wealth_taxes) * self.etfs[-1]
 
     def plot_subplots(self):
-            plt.plot(self.date, self.bank, '-', color='lightblue', label='Bank')
-            plt.plot(self.date, self.etfs, '-', color='orange', label='ETFs')
+            plt.plot(self.date, self.saved, ':', color='lightgrey', label='Saved')
+            plt.plot(self.date, self.matress, '-', color='tomato', label='Matress')
+            plt.plot(self.date, self.bank, '-', color='violet', label='Bank')
+            plt.plot(self.date, self.etfs, '-', color='mediumpurple', label='ETFs')
             plt.xticks(rotation=90, ha='right')
+            plt.xlabel("Period by Quarters")
+            plt.ylabel("Savings / CHF")
             plt.legend(loc='lower right')
             plt.tight_layout()
             plt.show()
@@ -245,5 +255,5 @@ if __name__ == '__main__':
 
     # Geben Sie hier ihr steuerbares Einkommen (Netto oder Brutto) ein:
     einkommen_steuerbar = 92000
-    steuern = Taxes(einkommen_steuerbar, netto=False, married=True, plot=True)
-    invest = Investement(plot=False)
+    # steuern = Taxes(einkommen_steuerbar, netto=False, married=True, plot=False)
+    invest = Investement(plot=True)
