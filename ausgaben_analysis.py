@@ -15,7 +15,7 @@ class ExpensesAnalyzer:
         arbeitsblatt_namen = excel_arbeitsmappe.sheet_names
 
         for arbeitsblatt_name in arbeitsblatt_namen:
-            if arbeitsblatt_name[-5:] == 'Total' or arbeitsblatt_name == 'Predictions':
+            if arbeitsblatt_name[-5:] == 'Total' or arbeitsblatt_name == 'Predictions' or arbeitsblatt_name == 'Mittel_HalbJahr':
                 continue
 
             arbeitsblatt = pd.read_excel(excel_arbeitsmappe, arbeitsblatt_name, header=None)
@@ -30,7 +30,12 @@ class ExpensesAnalyzer:
             self.gesamtdaten = pd.concat([self.gesamtdaten, arbeitsblatt], ignore_index=False)
 
     def analyze_data(self, threshold=500):
-        self.gesamtdaten = self.gesamtdaten[(self.gesamtdaten['Rubrik'] != 'Gesamtergebnis') & (self.gesamtdaten['Rubrik'] != 'Zeilenbeschriftungen')]
+        self.gesamtdaten = self.gesamtdaten[(self.gesamtdaten['Rubrik'] != 'Gesamtergebnis') &
+                                            (self.gesamtdaten['Rubrik'] != 'Zeilenbeschriftungen') &
+                                            (self.gesamtdaten['Rubrik'] != 'Totalbetrag') &
+                                            (self.gesamtdaten['Rubrik'] != 'Grand Total') &
+                                            (self.gesamtdaten['Rubrik'] != '(blank)') &
+                                            (self.gesamtdaten['Rubrik'] != 'Row Labels')]
 
         rubrik_summen = self.gesamtdaten.groupby('Rubrik')['Wert'].sum().reset_index()
         rubrik_summen['Wert'] = pd.to_numeric(rubrik_summen['Wert'], errors='coerce')
@@ -51,24 +56,26 @@ class ExpensesAnalyzer:
         j = 0
         colors = [cmap(i) for i in np.linspace(0, 1, len(self.gesamtdaten_ueber.groupby('Rubrik')))]
 
-        fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(14, 8))
+        fig, axes = plt.subplots(nrows=3, ncols=2, figsize=(14, 12))
         # fig.autofmt_xdate(bottom=0.2, rotation=-45, ha='left')
 
-        self.plot_category_data(axes[0, 0], 'Lebensmittel', 'Lebensmittel')
-        self.plot_category_data(axes[0, 1], 'Ausgang', 'Ausgang', ticks_right=True)
+        self.plot_category_data(axes[0, 0], 'Ausgang', 'Ausgang')
+        self.plot_category_data(axes[0, 1], 'Ferien', 'Ferien', ticks_right=True)
+        self.plot_category_data(axes[1, 0], 'Gesundheit', 'Gesundheit')
+        self.plot_category_data(axes[1, 1], 'Lebensmittel', 'Lebensmittel', ticks_right=True)
 
         for rubrik, rubrik_data in self.gesamtdaten_ueber.groupby('Rubrik'):
-            if rubrik not in ["Steuern", "Wohnungsmiete"]:
-                axes[1, 0].plot(rubrik_data['Datum'], rubrik_data['Wert'], '.-', color=colors[j], label=rubrik)
+            if rubrik not in ["Steuern", "Wohnungsmiete", "Grand Total"]:
+                axes[2, 0].plot(rubrik_data['Datum'], rubrik_data['Wert'], '.-', color=colors[j], label=rubrik)
             j += 1
-        axes[1, 0].legend(loc='lower center', bbox_to_anchor=(0.5, -0.8),
+        axes[2, 0].legend(loc='lower center', bbox_to_anchor=(0.5, -0.8),
                           ncol=4, fancybox=True, shadow=True)
-        axes[1, 0].invert_xaxis()
-        axes[1, 0].tick_params(axis='x', rotation=-45)
-        axes[1, 0].set_ylabel('Wert [CHF]')
-        axes[1, 0].set_title('Ausgaben-Tracking')
+        axes[2, 0].invert_xaxis()
+        axes[2, 0].tick_params(axis='x', rotation=-45)
+        axes[2, 0].set_ylabel('Wert [CHF]')
+        axes[2, 0].set_title('Ausgaben-Tracking')
 
-        self.plot_total_expenses(axes[1, 1], ticks_right=True)
+        self.plot_total_expenses(axes[2, 1], ticks_right=True)
 
         plt.tight_layout()
         plt.show()
@@ -98,7 +105,7 @@ class ExpensesAnalyzer:
 if __name__ == "__main__":
 
     # Example usage
-    root_path = r'C:\Users\misch\OneDrive\Bäckerweg_7'
+    root_path = r'C:\Users\0011323\OneDrive - Metrohm Group\Dokumente\Finance'
     excel_file_path = 'Ausgaben_Budget.xlsx'
 
     expenses_analyzer = ExpensesAnalyzer(root_path, excel_file_path)
