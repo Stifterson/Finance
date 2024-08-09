@@ -39,7 +39,7 @@ class Taxes():
             self.plot_subplots()
 
     def einkommen_abzuege(self, income, age, married, netto=True):
-        # print(f"Einkommen OHNE Abzüge: {income} CHF")
+        print(f"Einkommen OHNE Abzüge: {income} CHF")
         if not netto:
             bvg_key = self.check_range(age, self.bvg_abzug)
             if self.bvg_limit[0] <= income < self.bvg_limit[-1]:
@@ -59,7 +59,7 @@ class Taxes():
             factor = 2
         else:
             factor = 1
-        income_abzug = factor * (self.essen_abzug + self.transport_abzug + self.bildung_abzug) + self.saeule3a_abzug + self.berufskosten_abzug + self.gesundheit_abzug + self.versicherung_abzug
+        income_abzug = factor * (self.essen_abzug + self.transport_abzug + self.bildung_abzug + self.saeule3a_abzug) + self.berufskosten_abzug + self.gesundheit_abzug + self.versicherung_abzug
         income_after -= np.round(income_abzug, 0)
         # print(f"Abzüge: {int(income - income_after)} CHF")
         print(f"Zur Berechnung verwendetes Einkommen MIT Abzügen: {int(income_after)} CHF")
@@ -198,10 +198,10 @@ class Investement():
     estimate_bank_growth = 1.1 #Growth in Percent
     estimate_etf_growth = 6 #Growth in Percent
     def __init__(self, plot=True):
-        self.invest_rate = 3 #months
-        self.invest_duration = 10 #years
-        self.invest_amount = 5000 #CHF
-        self.saved= [0]
+        self.invest_rate = 3 #Months/Saving
+        self.invest_duration = 5 #Years
+        self.invest_amount = 5000 #CHF/Month
+        self.saved = [0]
         self.matress = [0]
         self.bank = [0]
         self.etfs = [0]
@@ -216,14 +216,18 @@ class Investement():
 
     def investment_solo(self):
         self.savings = 0
-        for _ in range(0, self.invest_duration):
+        for year in range(0, self.invest_duration):
+            # print(f"Year: {year}")
             for month in range(12):
+                # print(f"Month: {month}")
                 self.savings += self.invest_amount
                 if month % self.invest_rate == 0:
+                    # print(f"Saving: True")
                     self.saved.append(self.saved[-1] + self.savings)
                     self.matress.append(self.matress[-1] * (100 - self.estimate_inflation_loss)/100 + self.savings)
                     self.bank.append(self.bank[-1] * (100 + self.estimate_bank_growth - self.estimate_inflation_loss)/100 + self.savings)
                     self.etfs.append(self.etfs[-1] * (100 + self.estimate_etf_growth - self.estimate_inflation_loss)/100 + self.savings)
+
                     self.date.append(f"{self.current_month}-{self.current_year}")
                     self.savings = 0
                 self.current_month += 1
@@ -232,6 +236,7 @@ class Investement():
                     self.current_year += 1
 
             # TODO: Implement the right taxes strategy for property instead of wealth!!!!
+            print(f"You saved CHF {self.invest_amount*12} this year.")
             wealth_taxes = (self.vermoegen_steuersatz + self.vermoegen_steuerfuss) / 1000
             self.matress[-1] = (1 - wealth_taxes) * self.matress[-1]
             self.bank[-1] = (1 - wealth_taxes) * self.bank[-1]
@@ -242,10 +247,17 @@ class Investement():
             plt.plot(self.date, self.matress, '-', color='tomato', label='Matress')
             plt.plot(self.date, self.bank, '-', color='violet', label='Bank')
             plt.plot(self.date, self.etfs, '-', color='mediumpurple', label='ETFs')
+            saving_period = 12/self.invest_rate
+            for i in range(1, len(self.date), int(saving_period)):
+                plt.hlines(self.saved[i], 0, self.date[i], 'lightgrey', linestyles=':')
+
+            for i in range(1, len(self.saved), int(saving_period)):
+                plt.vlines(self.date[i], 0, self.saved[i], 'lightgrey', linestyles=':')
             plt.xticks(rotation=90, ha='right')
             plt.xlabel("Period by Quarters")
             plt.ylabel("Savings / CHF")
             plt.legend(loc='lower right')
+            # plt.grid('--', color='lightgrey')
             plt.tight_layout()
             plt.show()
 
@@ -254,6 +266,6 @@ class Investement():
 if __name__ == '__main__':
 
     # Geben Sie hier ihr steuerbares Einkommen (Netto oder Brutto) ein:
-    einkommen_steuerbar = 92000
-    # steuern = Taxes(einkommen_steuerbar, netto=False, married=True, plot=False)
+    einkommen_steuerbar = 92000 + 37600 # 96000 + 77292 # ab Jahr 2025
+    # steuern = Taxes(einkommen_steuerbar, netto=False, married=True, plot=True)
     invest = Investement(plot=True)
