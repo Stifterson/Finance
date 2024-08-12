@@ -211,12 +211,20 @@ class Investement():
 
         self.investment_solo()
 
+        # Show final values
+        print(15*"--")
+        print(f"Value: {int(self.etfs[-1])} CHF by ETFs")
+        print(f"Value: {int(self.saved[-1])} CHF by Saved")
+        print(f"Value: {int(self.bank[-1])} CHF by Bank")
+        print(15*"--")
+        print(f"Difference: {int(self.etfs[-1] - self.saved[-1])} CHF ETF to Saved")
+
         if plot:
             self.plot_subplots()
 
     def investment_solo(self):
         self.savings = 0
-        for year in range(0, self.invest_duration):
+        for year in range(1, self.invest_duration):
             # print(f"Year: {year}")
             for month in range(12):
                 # print(f"Month: {month}")
@@ -241,6 +249,8 @@ class Investement():
             self.matress[-1] = (1 - wealth_taxes) * self.matress[-1]
             self.bank[-1] = (1 - wealth_taxes) * self.bank[-1]
             self.etfs[-1] = (1 - wealth_taxes) * self.etfs[-1]
+            # Additional pay raises lead to higher investments
+            self.invest_amount += 500
 
     def plot_subplots(self):
             plt.plot(self.date, self.saved, ':', color='lightgrey', label='Saved')
