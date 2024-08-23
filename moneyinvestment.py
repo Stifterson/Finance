@@ -19,7 +19,7 @@ class Taxes():
     bvg_limit = [3675, 88200]
     saeule3a_abzug = 7056 #3a / Person
     essen_abzug = 1600 #Kantine / Person Ermässigung
-    versicherung_abzug = 3000 #Schnitt Verheiratete
+    versicherung_abzug = 3000 #4560/person #Schnitt Verheiratete
     transport_abzug = 2000 #Schnitt / Person ÖV
     berufskosten_abzug = 2000 #Min
     bildung_abzug = 400 #Min / Person
@@ -196,7 +196,7 @@ class Investement():
     vermoegen_steuerfuss = 2.2 #Gemeindefuss in Promille
     estimate_inflation_loss = 1.0 #Inflation Teuerung
     estimate_bank_growth = 1.1 #Growth in Percent
-    estimate_etf_growth = 6 #Growth in Percent
+    estimate_etf_growth = 8 #Growth in Percent
     def __init__(self, plot=True):
         self.invest_rate = 3 #Months/Saving
         self.invest_duration = 5 #Years
@@ -250,7 +250,7 @@ class Investement():
             self.bank[-1] = (1 - wealth_taxes) * self.bank[-1]
             self.etfs[-1] = (1 - wealth_taxes) * self.etfs[-1]
             # Additional pay raises lead to higher investments
-            self.invest_amount += 500
+            self.invest_amount += 2*250 # Salary increase / Person / Year
 
     def plot_subplots(self):
             plt.plot(self.date, self.saved, ':', color='lightgrey', label='Saved')
@@ -276,6 +276,6 @@ class Investement():
 if __name__ == '__main__':
 
     # Geben Sie hier ihr steuerbares Einkommen (Netto oder Brutto) ein:
-    einkommen_steuerbar = 92000 + 37600 # 96000 + 77292 # ab Jahr 2025
+    einkommen_steuerbar = 100000
     # steuern = Taxes(einkommen_steuerbar, netto=False, married=True, plot=True)
     invest = Investement(plot=True)
